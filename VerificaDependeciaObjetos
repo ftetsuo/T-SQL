@@ -1,0 +1,15 @@
+/*
+	Query de Vitor Fava
+	Youtube: https://www.youtube.com/watch?v=HLYYneeVwwM
+*/
+SELECT 
+	A.referencing_id
+	,referencing_object_name = OBJECT_SCHEMA_NAME(A.referencing_id) + '.' + OBJECT_NAME(A.referencing_id)
+	,referencing_object_type = B.type_desc
+	,referenced_object_name  = referenced_schema_name + '.' + referenced_entity_name
+FROM
+	sys.sql_expression_dependencies A
+	INNER JOIN sys.objects B
+		ON A.referencing_id = B.object_id
+WHERE
+	B.type = 'P'
