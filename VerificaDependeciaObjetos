@@ -1,6 +1,8 @@
 /*
 	Query de Vitor Fava
 	Youtube: https://www.youtube.com/watch?v=HLYYneeVwwM
+	
+	Edit: Não funciona se houver query dinamica (as tabelas utilizadas na query dinamica não são apontadas)
 */
 SELECT 
 	A.referencing_id
