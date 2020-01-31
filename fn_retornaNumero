@@ -1,0 +1,29 @@
+CREATE FUNCTION dbo.fn_retornaNumero
+(
+	@iStr		VARCHAR(MAX)
+)
+RETURNS INT
+AS
+BEGIN
+	
+	DECLARE
+		@str		VARCHAR(MAX)
+		,@return	VARCHAR(MAX)
+		,@cont		INT
+		
+	SET @str = @iStr
+	SET @return = ''
+	SET @cont = 1
+
+	WHILE @cont <= LEN(@str)
+	BEGIN
+		IF SUBSTRING(@str,@cont,1) LIKE '[0-9]'
+		BEGIN
+			SET @return += SUBSTRING(@str,@cont,1)
+		END
+		SET @cont += 1
+	END
+
+	RETURN TRY_CONVERT(INT,@return)
+
+END
