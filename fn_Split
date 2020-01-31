@@ -1,0 +1,33 @@
+CREATE FUNCTION dbo.fn_Split
+(
+	@iStr			VARCHAR(MAX)
+	,@iDelimiter	VARCHAR(10)
+)
+RETURNS @tReturn TABLE (ret VARCHAR(MAX))
+AS 
+BEGIN
+	
+	DECLARE 
+		@str			VARCHAR(MAX)
+		,@delimiter		VARCHAR(10)
+	
+	SET @str = @iStr
+	SET @delimiter = @iDelimiter
+
+	WHILE CHARINDEX(@delimiter,@str) > 0 
+	BEGIN
+		INSERT INTO @tReturn
+		--SELECT SUBSTRING(@str,1, IIF(CHARINDEX(@delimiter,@str) - 1 < 0, CHARINDEX(@delimiter,@str), CHARINDEX(@delimiter,@str) - 1))
+		SELECT SUBSTRING(@str,1, CHARINDEX(@delimiter,@str) - 1)
+		SET @str = SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1,LEN(@str))
+	END
+
+	IF LEN(@str) > 0
+	BEGIN
+		INSERT INTO @tReturn
+		SELECT @str
+	END
+
+	RETURN 
+
+END
