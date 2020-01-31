@@ -1,0 +1,35 @@
+CREATE FUNCTION dbo.fn_retornaTempoDuracao
+(
+	@iStartDatetime			DATETIME
+	,@iFinishDatetime		DATETIME
+)
+RETURNS VARCHAR(50)
+AS
+BEGIN
+	
+	DECLARE 
+		@hr				INT
+		,@min			INT
+		,@seg			INT
+		,@dtDiffSeg		INT
+		--,@d				INT
+		--,@iStartDatetime			DATETIME = '2020-01-30 00:00:00.000'
+		--,@iFinishDatetime			DATETIME = '2020-01-31 02:45:00.000'
+
+	SET @dtDiffSeg = DATEDIFF(SECOND,@iStartDatetime,@iFinishDatetime)
+
+	--SET @seg = @dtDiffSeg % 60
+	--SET @min = @dtDiffSeg / 60 % 60
+	--SET @hr = @dtDiffSeg  / (60*60) % 24
+	--SET @d =  @dtDiffSeg  / (60*60*24)
+
+	SET @seg = @dtDiffSeg % 60
+	SET @min = @dtDiffSeg / 60 % 60
+	SET @hr = @dtDiffSeg  / (60 * 60)
+	
+	RETURN 
+		RIGHT('00' + CONVERT(VARCHAR(MAX),@hr) ,2) + ':' +
+		RIGHT('00' + CONVERT(VARCHAR(MAX),@min),2) + ':' +
+		RIGHT('00' + CONVERT(VARCHAR(MAX),@seg),2)
+
+END
