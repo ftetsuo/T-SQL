@@ -1,0 +1,132 @@
+CREATE PROC dbo.sp_buscaDependecia
+(
+	@iObj		VARCHAR(MAX)
+	,@iDebug	BIT = 0
+)
+AS
+BEGIN
+	
+	DECLARE 
+		@obj		VARCHAR(MAX) = @iObj
+		,@debug		BIT			 = @iDebug
+		,@strSQL	VARCHAR(MAX)
+		,@strDB		VARCHAR(MAX)
+
+	IF OBJECT_ID('tempdb..##tbReturn') IS NOT NULL
+	BEGIN
+		DROP TABLE ##tbReturn
+	END
+
+	CREATE TABLE ##tbReturn
+	(
+		 objDbName					VARCHAR(MAX)
+		,objSchName					VARCHAR(MAX)
+		,objName					VARCHAR(MAX)
+		,objTypeDesc				VARCHAR(MAX)
+		,objCreateDate				DATETIME
+		,objLastModifyDate			DATETIME
+		,toFindObjName				VARCHAR(MAX)
+	)
+
+	IF NULLIF(@obj,'') IS NULL
+	BEGIN
+		SELECT 
+			* 
+		FROM 
+			##tbReturn
+		RETURN 
+	END
+
+	DECLARE curBancos CURSOR FOR
+	SELECT
+		QUOTENAME(name,'[')
+	FROM	
+		sys.databases
+	WHERE
+		database_id > 4
+		AND name != '_CONTROLE'
+
+	OPEN curBancos
+
+	FETCH NEXT FROM curBancos INTO @strDB
+
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+
+		SET @strSQL  = 'INSERT INTO ##tbReturn'																				+ CHAR(13)
+		SET @strSQL += '('																									+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'objDbName'																				+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objSchName'																				+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objName'																					+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objTypeDesc'																				+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objCreateDate'																			+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objLastModifyDate'																		+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',toFindObjName'																			+ CHAR(13)
+		SET @strSQL += ')'																									+ CHAR(13)
+		SET @strSQL += 'SELECT'																								+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'objDbName = ' + CHAR(39) + @strDB + CHAR(39)												+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objSchName = QUOTENAME(C.name,' + CHAR(39) + '[' + CHAR(39) + ')'						+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objName = QUOTENAME(B.name,' + CHAR(39) + '[' + CHAR(39) + ')'							+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objTypeDesc = B.type_desc'   															+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objCreateDate = B.create_date' 															+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objLastModifyDate = B.modify_date' 														+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',toFindObjName = ' + CHAR(39) + @obj + CHAR(39)											+ CHAR(13)
+		SET @strSQL += 'FROM'																								+ CHAR(13)
+		SET @strSQL += CHAR(9) + @strDB + '.[sys].[sql_modules] A WITH(NOLOCK)'												+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'INNER JOIN ' + @strDB + '.[sys].[objects] B WITH(NOLOCK)'									+ CHAR(13)
+		SET @strSQL += CHAR(9) + CHAR(9) + 'ON A.[object_id] = B.[object_id]'												+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'INNER JOIN ' + @strDB + '.[sys].[schemas] C WITH(NOLOCK)'									+ CHAR(13)
+		SET @strSQL += CHAR(9) + CHAR(9) + 'ON B.[schema_id] = C.[schema_id]'												+ CHAR(13)
+		SET @strSQL += 'WHERE'																								+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'A.definition LIKE ' + CHAR(39) + '%' + @obj + '%' + + CHAR(39)							+ CHAR(13)
+		SET @strSQL += 'UNION ALL'																							+ CHAR(13)
+		SET @strSQL += 'SELECT'																								+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'objDbName = ' + CHAR(39) + @strDB + CHAR(39)												+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objSchName = QUOTENAME(C.name,' + CHAR(39) + '[' + CHAR(39) + ')'						+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objName = QUOTENAME(B.name,' + CHAR(39) + '[' + CHAR(39) + ')'							+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objTypeDesc = B.type_desc'   															+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objCreateDate = B.create_date' 															+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',objLastModifyDate = B.modify_date' 														+ CHAR(13)
+		SET @strSQL += CHAR(9) + ',toFindObjName = ' + CHAR(39) + @obj + CHAR(39)											+ CHAR(13)
+		SET @strSQL += 'FROM'																								+ CHAR(13)
+		SET @strSQL += CHAR(9) + @strDB + '.[sys].[columns] A WITH(NOLOCK)'													+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'INNER JOIN ' + @strDB + '.[sys].[objects] B WITH(NOLOCK)'									+ CHAR(13)
+		SET @strSQL += CHAR(9) + CHAR(9) + 'ON A.[object_id] = B.[object_id]'												+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'INNER JOIN ' + @strDB + '.[sys].[schemas] C WITH(NOLOCK)'									+ CHAR(13)
+		SET @strSQL += CHAR(9) + CHAR(9) + 'ON B.[schema_id] = C.[schema_id]'												+ CHAR(13)
+		SET @strSQL += 'WHERE'																								+ CHAR(13)
+		SET @strSQL += CHAR(9) + 'A.name LIKE ' + CHAR(39) + '%' + @obj + '%' + + CHAR(39)									+ CHAR(13)
+
+		IF @debug = 1
+		BEGIN
+			PRINT @strSQL
+		END
+		ELSE
+		BEGIN
+			EXEC (@strSQL)
+		END
+
+		FETCH NEXT FROM curBancos INTO @strDB
+	END
+
+	CLOSE curBancos
+	DEALLOCATE curBancos
+
+	IF @debug = 0
+	BEGIN
+		SELECT *
+		FROM
+			##tbReturn
+		ORDER BY 
+			 objDbName
+			,objTypeDesc
+			,objSchName
+			,objName
+	END
+
+	IF OBJECT_ID('tempdb..##tbReturn') IS NOT NULL
+	BEGIN
+		DROP TABLE ##tbReturn
+	END
+
+END
