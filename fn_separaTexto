@@ -1,0 +1,32 @@
+CREATE FUNCTION dbo.fn_separaTexto
+(
+	@iStr			VARCHAR(MAX)
+	,@iDelimiter	VARCHAR(10)
+	,@iPosition		INT
+)
+RETURNS VARCHAR(MAX)
+AS
+BEGIN
+	
+	DECLARE 
+		@str			VARCHAR(MAX)
+		,@return		VARCHAR(MAX)
+		,@delimiter		VARCHAR(10)
+		,@position		INT
+		,@cont			INT
+	
+	SET @str = @iStr
+	SET @delimiter = @iDelimiter
+	SET @position = @iPosition
+	SET @cont = 0
+
+	WHILE @cont < @position
+	BEGIN
+		SET @return = SUBSTRING(@str,1,IIF(CHARINDEX(@delimiter,@str) = 0, LEN(@str), CHARINDEX(@delimiter,@str)))
+		SET @str = IIF(SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1, LEN(@str)) = @str, NULL, SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1, LEN(@str)))
+		SET @cont += 1
+	END
+
+	RETURN @return
+
+END
