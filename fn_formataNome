@@ -1,0 +1,48 @@
+CREATE FUNCTION dbo.fn_formataNome
+(
+	@iStr		VARCHAR(MAX)
+	,@iPattern	VARCHAR(MAX)
+)
+RETURNS VARCHAR(MAX)
+AS
+BEGIN
+	
+	DECLARE
+		@str			VARCHAR(MAX)
+		,@return		VARCHAR(MAX)
+		,@pattern		VARCHAR(10)
+		,@bUpper		BIT
+		,@cont			INT
+		
+	SET @str = @iStr
+	SET @pattern = @iPattern
+	SET @return = ''
+	SET @bUpper = 1
+	SET @cont = 1
+	
+	WHILE @cont <= LEN(@str)
+	BEGIN
+		IF @bUpper = 1
+		BEGIN
+			SET @return += UPPER(SUBSTRING(@str,@cont,1))
+		END
+		ELSE
+		BEGIN
+			SET @return += LOWER(SUBSTRING(@str,@cont,1))
+		END
+		
+		IF SUBSTRING(@str,@cont,1) = @pattern
+		BEGIN
+			SET @bUpper = 1
+		END
+		ELSE
+		BEGIN
+			SET @bUpper = 0
+		END
+
+		SET @cont += 1
+	END
+
+	RETURN @return
+
+END
