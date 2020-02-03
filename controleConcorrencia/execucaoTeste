@@ -1,0 +1,11 @@
+declare
+	@i int = 1 
+	,@fila int = 1
+
+waitfor time '09:44:00.000'
+
+while (@i <= 1000000)
+begin
+	exec dbo.sp_teste_paralelismo @fila
+	set @i += 1
+end
