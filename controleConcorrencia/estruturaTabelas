@@ -1,0 +1,23 @@
+drop table dbo.lista_vouchers
+create table dbo.lista_vouchers
+(
+	idVoucher int identity(15789,1)
+	,flgRecuperado bit
+)	
+
+insert into dbo.lista_vouchers(flgRecuperado)
+select 0
+go 3000000	
+	
+
+create unique clustered index idx
+on dbo.lista_vouchers(idVoucher)
+with(data_compression=page)
+
+drop table dbo.voucher_sorteado
+create table dbo.voucher_sorteado
+(
+	idVoucher int
+	,idFila int
+	,dtRegistro datetime
+)
