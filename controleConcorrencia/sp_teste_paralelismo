@@ -1,0 +1,56 @@
+--drop proc dbo.sp_teste_paralelismo
+alter proc dbo.sp_teste_paralelismo
+(
+	@iIdFila int
+)
+as
+begin
+	
+	set nocount on
+	set xact_abort on
+
+	set transaction isolation level read committed
+
+	declare
+		@idFila int = @iIdFila
+
+	declare @tb_deleted table
+	(
+		idVoucher int
+	)
+		
+	;with cte_pega_primeiro as
+	(
+		select top 1 *
+		from
+			dbo.lista_vouchers a with(rowlock, holdlock)
+		where
+			flgRecuperado = 0
+		order by 
+			idVoucher
+	)
+	update a
+	set 
+		flgRecuperado = 1
+	output
+		deleted.idVoucher 
+	into
+		@tb_deleted 
+		(
+			idVoucher
+		)
+	from
+		cte_pega_primeiro a with(rowlock, holdlock)
+
+	insert into dbo.voucher_sorteado
+	select 
+		idVoucher
+		,@idFila
+		,getdate()
+	from
+		@tb_deleted
+
+	set nocount off
+	set xact_abort off
+
+end
