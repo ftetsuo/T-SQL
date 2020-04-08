@@ -22,7 +22,7 @@ BEGIN
 
 	WHILE @cont < @position
 	BEGIN
-		SET @return = SUBSTRING(@str,1,IIF(CHARINDEX(@delimiter,@str) = 0, LEN(@str), CHARINDEX(@delimiter,@str)))
+		SET @return = SUBSTRING(@str,1,IIF(CHARINDEX(@delimiter,@str) = 0, LEN(@str), CHARINDEX(@delimiter,@str)-1))
 		SET @str = IIF(SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1, LEN(@str)) = @str, NULL, SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1, LEN(@str)))
 		SET @cont += 1
 	END
