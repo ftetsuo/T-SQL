@@ -1,8 +1,9 @@
 CREATE FUNCTION dbo.fn_separaTexto
 (
-	@iStr			VARCHAR(MAX)
-	,@iDelimiter	VARCHAR(10)
-	,@iPosition		INT
+	@iStr				VARCHAR(MAX)
+	,@iDelimiter		VARCHAR(10)
+	,@iPosition			INT
+	,@iTextQualifier	BIT
 )
 RETURNS VARCHAR(MAX)
 AS
@@ -14,18 +15,101 @@ BEGIN
 		,@delimiter		VARCHAR(10)
 		,@position		INT
 		,@cont			INT
+		,@textQualifier	BIT
+		,@currentChar	CHAR(1)
+		,@ignoreNext	BIT = 0
+		,@fieldPosition	INT
+		,@lastSeq		INT
 	
 	SET @str = @iStr
 	SET @delimiter = @iDelimiter
 	SET @position = @iPosition
 	SET @cont = 0
+	SET @textQualifier = @iTextQualifier
 
-	WHILE @cont < @position
+	IF @textQualifier = 0
 	BEGIN
-		SET @return = SUBSTRING(@str,1,IIF(CHARINDEX(@delimiter,@str) = 0, LEN(@str), CHARINDEX(@delimiter,@str)-1))
-		SET @str = IIF(SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1, LEN(@str)) = @str, NULL, SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1, LEN(@str)))
-		SET @cont += 1
+		WHILE @cont < @position
+		BEGIN
+			SET @return = SUBSTRING(@str,1,IIF(CHARINDEX(@delimiter,@str) = 0, LEN(@str), CHARINDEX(@delimiter,@str)-1))
+			SET @str = IIF(SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1, LEN(@str)) = @str, NULL, SUBSTRING(@str,CHARINDEX(@delimiter,@str)+1, LEN(@str)))
+			SET @cont += 1
+		END
 	END
+	ELSE IF @textQualifier = 1
+	BEGIN
+		DECLARE @tb_position TABLE
+		(
+			position_seq		INT
+			,position			INT
+		)
+		
+		SET @cont = 1
+		SET @fieldPosition = 1
+		
+		INSERT INTO @tb_position 
+		SELECT @fieldPosition, @fieldPosition
+
+		WHILE @cont < LEN(@str)
+		BEGIN
+			SET @currentChar = SUBSTRING(@str,@cont,1)
+			
+			IF @currentChar = '"'
+			BEGIN
+				SET @ignoreNext = IIF(@ignoreNext = 0, 1, 0)
+			END
+			
+			IF @currentChar = @delimiter AND @ignoreNext = 0
+			BEGIN
+				INSERT INTO @tb_position 
+				SELECT @fieldPosition, @cont
+			END
+			
+			IF EXISTS  
+			(
+				SELECT TOP 1 1
+				FROM
+					@tb_position
+				WHERE 
+					position_seq = @fieldPosition
+				GROUP BY
+					position_seq
+				HAVING COUNT(*) > 1
+			)
+			BEGIN
+				SET @fieldPosition += 1
+
+				INSERT INTO @tb_position 
+				SELECT @fieldPosition, @cont+1
+			END
+
+			SET @cont += 1
+		END
+
+	END
+
+	INSERT INTO @tb_position 
+	SELECT @fieldPosition, LEN(@str)
+
+	SELECT @lastSeq = MAX(position_seq) FROM @tb_position
+
+	;WITH CTE_Positions AS
+	(
+		SELECT 
+			position_seq
+			,position_start = MIN(position)
+			,position_end = MAX(position)
+		FROM 
+			@tb_position
+		GROUP BY
+			position_seq
+	)
+	SELECT 
+		@return = REPLACE(RTRIM(LTRIM(SUBSTRING(@str,position_start,IIF(position_seq = @lastSeq, LEN(@str), position_end - position_start)))),'"','')
+	FROM
+		CTE_Positions
+	WHERE
+		position_seq = @position
 
 	RETURN @return
 
