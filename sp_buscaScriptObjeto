@@ -1,4 +1,4 @@
-CREATE PROC dbo.SP_BUSCA_SCRIPT_OBJETO
+CREATE PROC dbo.sp_buscaScriptObjeto
 (
 	@var VARCHAR(MAX)
 )
