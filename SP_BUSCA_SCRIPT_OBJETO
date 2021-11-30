@@ -1,0 +1,30 @@
+CREATE PROC dbo.SP_BUSCA_SCRIPT_OBJETO
+(
+	@var VARCHAR(MAX)
+)
+AS
+BEGIN
+	
+	SET NOCOUNT ON
+	
+	--DECLARE @var VARCHAR(MAX) = 'nomeObjeto'
+
+	SELECT 
+		obj = OBJECT_SCHEMA_NAME(OBJECT_ID)+'.'+OBJECT_NAME(OBJECT_ID)
+		,obj_type = CASE 
+						WHEN OBJECTPROPERTY(OBJECT_ID, 'IsView') = 1 THEN 'View'
+						WHEN OBJECTPROPERTY(OBJECT_ID, 'IsTable') = 1 OR OBJECTPROPERTY(OBJECT_ID, 'IsUserTable') = 1 THEN 'Table'
+						WHEN OBJECTPROPERTY(OBJECT_ID, 'IsProcedure') = 1 THEN 'Procedure'
+						WHEN OBJECTPROPERTY(OBJECT_ID, 'IsScalarFunction') = 1 THEN 'Function'
+						WHEN OBJECTPROPERTY(OBJECT_ID, 'IsTableFunction') = 1 THEN 'TableFunction'
+					END
+		,* 
+	FROM 
+		sys.sql_modules
+	WHERE 
+		definition LIKE CONCAT('%',@var,'%')
+	ORDER BY 2,1
+
+	SET NOCOUNT OFF
+
+END
