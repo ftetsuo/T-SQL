@@ -1,0 +1,49 @@
+ALTER PROCEDURE dbo.sp_index_management
+(
+	@table_schema varchar(10)
+	,@table_name varchar(100)
+	,@turn varchar(3) 
+)
+AS
+BEGIN
+	/********************************************************************************************************************************
+		Data					2022-03-20
+		Autor					Fabio Tetsuo Taira
+		Objetivo				Desligar índices nonclustered durante carga e reconstruir todos após a carga
+		Parametros
+			@turn:				on	-> liga índices nonclustered
+								off -> desliga índices nonclustered
+		Observacao				Pode ser adicionado a funcionalidade de verificacao de fragmentacao de indices como 
+		                        condicao para rebuild
+	
+	********************************************************************************************************************************/
+	
+	SET NOCOUNT ON
+	
+	DECLARE 
+		@sql varchar(max) = ''
+		--,@table_schema varchar(10)  = 'dbo'
+		--,@table_name varchar(100)   = 'teste'
+		--,@turn varchar(3)           = 'OFF'
+
+	IF @turn = 'OFF'
+	BEGIN
+		SELECT  
+			@sql = STRING_AGG('ALTER INDEX ' + name + ' ON ' + @table_schema + '.' + @table_name + ' DISABLE', CHAR(13))
+		FROM
+			sys.indexes A
+		WHERE
+			type_desc NOT IN ( 'CLUSTERED' , 'HEAP' ) -- Verificar se Columnstore sera necessario eventualmente
+			AND object_id = OBJECT_ID(@table_schema+'.'+@table_name)
+			AND is_disabled = 0
+	END
+	ELSE
+	BEGIN
+		SET @sql = 'ALTER INDEX ALL ON ' + @table_schema + '.' + @table_name + ' REBUILD'
+	END
+
+	EXEC (@sql)
+	
+	SET NOCOUNT OFF
+
+END
